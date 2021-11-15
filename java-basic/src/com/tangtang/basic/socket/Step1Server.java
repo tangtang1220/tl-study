@@ -26,25 +26,33 @@ public class Step1Server {
     public void accept() throws IOException {
         try {
             System.out.println("Create a Socket");
-
-            Socket accept = serverSocket.accept();
-
-            DataInputStream reader = new DataInputStream(new BufferedInputStream(accept.getInputStream()));
-
-            StringBuilder requestBuilder = new StringBuilder();
-            String line = "";
-            while (!(line = reader.readLine()).isEmpty()) {
-                requestBuilder.append(line + '\n');
-            }
-            String request = requestBuilder.toString();
-            System.out.println(request);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(accept.getOutputStream()));
-            writer.write(handler.apply(request));
-            writer.flush();
-            writer.close();
+            Socket socket = serverSocket.accept();
+            new Thread(() -> {
+                try {
+                    this.handler(socket);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         } catch (ServerException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public void handler(Socket socket) throws IOException {
+        DataInputStream reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+        StringBuilder requestBuilder = new StringBuilder();
+        String line = "";
+        while (!(line = reader.readLine()).isEmpty()) {
+            requestBuilder.append(line + '\n');
+        }
+        String request = requestBuilder.toString();
+        System.out.println(request);
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        writer.write(handler.apply(request));
+        writer.flush();
+        writer.close();
     }
 
     public static void main(String[] args) throws IOException {
